@@ -126,7 +126,7 @@ class MainGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Chopping v1.0")
-        self.root.iconbitmap('tijera.ico')
+        self.root.iconbitmap('icon.ico')
         self.root.geometry("400x75")
         self.root.minsize(400, 75)
 
