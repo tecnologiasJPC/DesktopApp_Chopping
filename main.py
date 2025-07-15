@@ -5,6 +5,7 @@ import pytesseract
 import os
 import datetime
 import glob
+import webbrowser
 from PIL import Image, ImageTk, ImageGrab
 from pyzbar.pyzbar import decode
 from textblob import TextBlob
@@ -196,6 +197,17 @@ class MainGUI:
         os.startfile(self.route)
 
     def show_main(self, data):  # this is called once the selection is done
+
+        def open_link(event):
+            url = self.text_box.get("1.0", "end-1c").strip()
+
+            chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
+            if os.path.exists(chrome_path):
+                webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
+                webbrowser.get('chrome').open(url)
+            else:
+                webbrowser.open(url)
+
         self.root.deiconify()
 
         if self.label1.cget("text") == "Select the area to analyze":
@@ -226,8 +238,6 @@ class MainGUI:
                 self.label1.config(text="Text found")
             else:
                 self.label1.config(text="QR code detected")
-            #self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            #self.text_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
             # --- Crear un frame contenedor para Text + Scrollbar ---
             # self.frame_text = tk.Frame(self.root)
@@ -238,8 +248,17 @@ class MainGUI:
             self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             self.text_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+            self.text_box.config(state=tk.NORMAL)
             self.text_box.delete("1.0", tk.END)
-            self.text_box.insert(tk.END, enunciado)
+            if enunciado.startswith(("http://", "https://", "www.")):
+                self.text_box.insert(tk.END, enunciado, ("link", enunciado))
+                self.text_box.tag_config("link", foreground="blue", underline=1)
+                self.text_box.tag_bind("link", "<Button-1>", open_link)
+                self.text_box.tag_bind("link", "<Enter>", lambda e: self.text_box.config(cursor="hand2"))
+                self.text_box.tag_bind("link", "<Leave>", lambda e: self.text_box.config(cursor=""))
+            else:
+                self.text_box.insert(tk.END, enunciado)
+            self.text_box.config(state=tk.DISABLED)
 
             self.root.geometry(str(window_width)+"x"+str(window_height))
             self.root.minsize(window_width, window_height)
