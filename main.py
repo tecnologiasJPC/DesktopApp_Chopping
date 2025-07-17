@@ -2,6 +2,7 @@ import tkinter as tk
 import ctypes
 import pyperclip
 import pytesseract
+import pyautogui
 import os
 import datetime
 import glob
@@ -111,8 +112,8 @@ class RectOverlay:
         pyperclip.copy(text)
         text = text[:-1]
 
-        blob = TextBlob(text)
-        text = str(blob.correct())
+        #blob = TextBlob(text)
+        #text = str(blob.correct())
 
         self.text_found = text
         print('Text found:', self.text_found)
@@ -131,7 +132,7 @@ class RectOverlay:
             self.text_analyze()
 
         if self.on_close_callback:
-            self.on_close_callback({"Text": self.text_found, "QR": self.qr_found})
+            self.on_close_callback({"Text": self.text_found, "QR": self.qr_found, "Image": self.current_name})
 
 
 # this is the main GUI displayed since the beginning
@@ -140,23 +141,33 @@ class MainGUI:
         self.root = tk.Tk()
         self.root.title("Chopping v1.0")
         self.route = os.path.dirname(__file__) + '/captures/'
-        icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
-        self.root.iconbitmap(icon_path)
-        self.root.geometry("400x95")
-        self.root.minsize(400, 95)
+        self.root.iconbitmap(os.path.join(os.path.dirname(__file__), 'icon.ico'))
+        self.root.geometry("400x125")
+        self.root.minsize(400, 125)
+        self.root.resizable(False, False)
 
         self.frame = tk.Frame(self.root)
         self.frame.pack(pady=10)
 
-        self.button = tk.Button(self.frame, text="Draw", command=self.launch_overlay, width=25, height=2)
+        self.button = tk.Button(self.frame, text="Draw", command=self.launch_overlay, width=20, height=2)
         self.button.pack(side=tk.LEFT)
 
         img = Image.open(os.path.join(os.path.dirname(__file__), "folder.ico"))
-        img = img.resize((49, 49), Image.LANCZOS)
+        img = img.resize((49, 49))
         photo = ImageTk.PhotoImage(img)
         self.buttonRoute = tk.Button(self.frame, image=photo, text="Folder", command=self.open_location)
         self.buttonRoute.image = photo
         self.buttonRoute.pack(side=tk.LEFT)
+
+        img_copy = Image.open(os.path.join(os.path.dirname(__file__), "copyImage.ico"))
+        img_copy = img_copy.resize((49, 49))
+        photo_copy = ImageTk.PhotoImage(img_copy)
+        self.buttonCopyImg = tk.Button(self.frame, image=photo_copy, text="Image", command=self.copy_image)
+        self.buttonCopyImg.image = photo_copy
+        self.buttonCopyImg.pack(side=tk.LEFT)
+
+        self.labelCoordinates = tk.Label(self.root, text="")
+        self.labelCoordinates.pack()
 
         self.labelImg = tk.Label(self.root)
 
@@ -189,6 +200,11 @@ class MainGUI:
         # Configure the scrollbar to work with the text widget
         self.scrollbar.config(command=self.text_box.yview)
 
+    def update_coords(self):
+        x, y = pyautogui.position()
+        self.labelCoordinates.config(text=f"X: {x} Y: {y}")
+        self.root.after(100, self.update_coords)  # update every 100 milliseconds
+
     def launch_overlay(self):
         self.root.withdraw()
         RectOverlay(self.root, on_close_callback=self.show_main)
@@ -196,11 +212,13 @@ class MainGUI:
     def open_location(self):
         os.startfile(self.route)
 
+    def copy_image(self):
+        pass
+
     def show_main(self, data):  # this is called once the selection is done
 
         def open_link(event):
             url = self.text_box.get("1.0", "end-1c").strip()
-
             chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
             if os.path.exists(chrome_path):
                 webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
@@ -223,6 +241,10 @@ class MainGUI:
             window_width = w
         window_height = h + 200
 
+        self.root.geometry(str(window_width) + "x" + str(window_height))
+        self.root.minsize(window_width, window_height)
+        self.root.resizable(True, True)
+
         capture = ImageTk.PhotoImage(image)
         self.labelImg.config(image=capture)
         self.labelImg.image = capture
@@ -231,39 +253,36 @@ class MainGUI:
         if self.label1.cget("text") == "Select the area to analyze":
             self.label1.pack()
 
+        self.author.pack(side=tk.BOTTOM, anchor='e')
+
+        # --- Crear un frame contenedor para Text + Scrollbar ---
+        # self.frame_text = tk.Frame(self.root)
+        self.frame_text.pack(fill=tk.BOTH, expand=True)  # Se expandirá en la parte superior
+        # Mover Text y Scrollbar al frame (no a root)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.text_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.text_box.config(state=tk.NORMAL)
+        self.text_box.delete("1.0", tk.END)
+
         if data:
-            enunciado = data["Text"]
-            codigo = data["QR"]
-            if codigo is None:
+            message = data["Text"]
+            if data["QR"] is None:
                 self.label1.config(text="Text found")
             else:
                 self.label1.config(text="QR code detected")
 
-            # --- Crear un frame contenedor para Text + Scrollbar ---
-            # self.frame_text = tk.Frame(self.root)
-            self.author.pack(side=tk.BOTTOM, anchor='e')
-            self.frame_text.pack(fill=tk.BOTH, expand=True)  # Se expandirá en la parte superior
-
-            # Mover Text y Scrollbar al frame (no a root)
-            self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            self.text_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-            self.text_box.config(state=tk.NORMAL)
-            self.text_box.delete("1.0", tk.END)
-            if enunciado.startswith(("http://", "https://", "www.")):
-                self.text_box.insert(tk.END, enunciado, ("link", enunciado))
+            if message.startswith(("http://", "https://", "www.")):
+                self.text_box.insert(tk.END, message, ("link", message))
                 self.text_box.tag_config("link", foreground="blue", underline=1)
                 self.text_box.tag_bind("link", "<Button-1>", open_link)
                 self.text_box.tag_bind("link", "<Enter>", lambda e: self.text_box.config(cursor="hand2"))
                 self.text_box.tag_bind("link", "<Leave>", lambda e: self.text_box.config(cursor=""))
             else:
-                self.text_box.insert(tk.END, enunciado)
-            self.text_box.config(state=tk.DISABLED)
-
-            self.root.geometry(str(window_width)+"x"+str(window_height))
-            self.root.minsize(window_width, window_height)
+                self.text_box.insert(tk.END, message)
+            self.text_box.config(state=tk.DISABLED)     # this avoid to edit text
 
     def run(self):
+        self.update_coords()
         self.root.mainloop()
 
 
