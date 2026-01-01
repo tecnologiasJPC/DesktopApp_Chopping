@@ -10,6 +10,7 @@ import datetime
 import webbrowser
 from PIL import Image, ImageTk, ImageGrab
 
+# it is required to download tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 # this adapts dimensions of screen
