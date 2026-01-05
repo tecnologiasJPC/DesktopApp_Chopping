@@ -146,7 +146,14 @@ class MainGUI:
         self.root.title("Chopping v1.0")
         self.route = os.path.dirname(__file__) + '/captures/'
         self.root.iconbitmap(os.path.join(os.path.dirname(__file__), 'icono.ico'))
-        self.root.geometry("400x125")       # initial size of window
+
+        user_ = ctypes.windll.user32
+        v_size = user_.GetSystemMetrics(79) # vertical size
+        v = int(v_size * 0.13)
+        h = int(v * 3)
+        comand = str(h) + 'x' + str(v)
+
+        self.root.geometry(comand)       # initial size of window
         self.root.minsize(400, 125)         # fixed size of window
         self.root.resizable(False, False)   # window is not resizable
         self.frame = tk.Frame(self.root)
