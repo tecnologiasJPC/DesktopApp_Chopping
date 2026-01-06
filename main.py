@@ -148,10 +148,12 @@ class MainGUI:
         self.root.iconbitmap(os.path.join(os.path.dirname(__file__), 'icono.ico'))
 
         user_ = ctypes.windll.user32
-        v_size = user_.GetSystemMetrics(79) # vertical size
+        v_size = user_.GetSystemMetrics(79)  # vertical size
         v = int(v_size * 0.13)
         h = int(v * 3)
         comand = str(h) + 'x' + str(v)
+
+        print(f"Window size is {v} x {h}")
 
         self.root.geometry(comand)       # initial size of window
         self.root.minsize(400, 125)         # fixed size of window
