@@ -18,7 +18,7 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tess
 # this adapts dimensions of screen
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Windows 8.1+
-except:
+except Exception as e:
     try:
         ctypes.windll.user32.SetProcessDPIAware()  # Windows 7
     except:
@@ -30,7 +30,9 @@ class RectOverlay:
     def __init__(self, master, on_close_callback):
         self.master = master
         self.on_close_callback = on_close_callback
+        self.process = True
 
+        # variables to get the current monitor size
         user32 = ctypes.windll.user32
         self.virtual_width = user32.GetSystemMetrics(78)
         self.virtual_height = user32.GetSystemMetrics(79)
@@ -47,19 +49,17 @@ class RectOverlay:
         self.canvas = tk.Canvas(self.overlay, cursor="cross", bg='black', highlightthickness=0)
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
-        self.start_x = None
-        self.start_y = None
+        self.start_x, self.start_y = None, None
         self.rect = None
         self.text_found = None
         self.qr_found = None
         self.section = None
-
         self.current_name = None
 
         self.canvas.bind("<ButtonPress-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
-        self.overlay.bind("<Escape>", lambda e: self.close())
+        self.canvas.bind_all("<Escape>", lambda e: self.close)
 
     def on_click(self, event):
         self.start_x = self.canvas.canvasx(event.x)
@@ -90,8 +90,10 @@ class RectOverlay:
         if right > left and bottom > top:
             part = [left, top, right, bottom]
             self.section = tuple(part)
+            self.process = True
         else:
-            print("Rectángulo inválido, no se guardó captura.")
+            print("Invalid rectangle, capture is not saved.")
+            self.process = False
         self.close()
 
     def qr_analyze(self):
@@ -100,7 +102,7 @@ class RectOverlay:
             img = cv2.imread(os.path.join(os.path.dirname(__file__), self.current_name))
             q_data, bbox, _ = qr_detector.detectAndDecode(img)
             if q_data:
-                print(f"QR detectado: {q_data}")
+                print(f"QR detected: {q_data}")
                 self.qr_found = str(q_data)
                 return True
             else:
@@ -124,20 +126,21 @@ class RectOverlay:
     def close(self, data=None):
         self.overlay.destroy()
         time.sleep(0.1)
-        now = datetime.datetime.now()
-        stamp = now.strftime("%Y-%m-%d %H_%M_%S")
-        screenshot = ImageGrab.grab(self.section, all_screens=True)
+        if self.process:
+            now = datetime.datetime.now()
+            stamp = now.strftime("%Y-%m-%d %H_%M_%S")
+            screenshot = ImageGrab.grab(self.section, all_screens=True)
 
-        self.current_name = "captures/capture" + stamp + ".png"
-        screenshot.save(os.path.join(os.path.dirname(__file__), self.current_name))
+            self.current_name = "captures/capture" + stamp + ".png"
+            screenshot.save(os.path.join(os.path.dirname(__file__), self.current_name))
 
-        if self.qr_analyze():
-            self.text_found = self.qr_found
-        else:
-            self.text_analyze()
+            if self.qr_analyze():
+                self.text_found = self.qr_found
+            else:
+                self.text_analyze()
 
         if self.on_close_callback:
-            self.on_close_callback({"Text": self.text_found, "QR": self.qr_found,
+            self.on_close_callback({"State": self.process, "Text": self.text_found, "QR": self.qr_found,
                                     "Image": self.current_name, "Section": self.section})
 
 
@@ -145,7 +148,7 @@ class RectOverlay:
 class MainGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Chopping v1.0")
+        self.root.title("Chopping v1.2")
         self.route = os.path.dirname(__file__) + '/captures/'
         self.root.iconbitmap(os.path.join(os.path.dirname(__file__), 'icono.ico'))
 
@@ -153,11 +156,8 @@ class MainGUI:
         v_size = user_.GetSystemMetrics(79)  # vertical size
         v = int(v_size * 0.13)
         h = int(v * 3)
-        comand = str(h) + 'x' + str(v)
-
-        print(f"Window size is {h} x {v}")
-
-        self.root.geometry(comand)       # initial size of window
+        self.initial_window = str(h) + 'x' + str(v)
+        self.root.geometry(self.initial_window)    # initial size of window
         self.root.minsize(400, 125)         # fixed size of window
         self.root.resizable(False, False)   # window is not resizable
         self.frame = tk.Frame(self.root)
@@ -212,19 +212,23 @@ class MainGUI:
         # configure the scrollbar to work with the text widget
         self.scrollbar.config(command=self.text_box.yview)
 
-    def update_coords(self):
+    # get the current position of cursor and updates every 100 ms
+    def update_coordinates(self):
         x, y = pyautogui.position()
         self.labelCoordinates.config(text=f"X: {x} Y: {y}")
-        self.root.after(100, self.update_coords)  # update every 100 milliseconds
+        self.root.after(100, self.update_coordinates)  # update every 100 milliseconds
 
+    # creates a transparent window over the screen
     def launch_overlay(self):
         self.root.withdraw()
         RectOverlay(self.root, on_close_callback=self.show_main)
 
+    # opens the folder where the captures are saved
     def open_location(self):
         os.startfile(self.route)
 
-    def show_main(self, data):  # this is called once the selection is done
+    # this is called once the first area selection is done
+    def show_main(self, data):
 
         def open_link(event):
             url = self.text_box.get("1.0", "end-1c").strip()
@@ -235,52 +239,51 @@ class MainGUI:
             else:
                 webbrowser.open(url)
 
-        self.root.deiconify()
+        self.root.deiconify()   # shows again the original window
 
-        if self.labelInfo.cget("text") == "Select the area to analyze":
-            self.labelInfo.pack_forget()
+        if data["State"]:
 
-        files = glob.glob(os.path.join(self.route, '*.png'))
-        most_recent = max(files, key=os.path.getmtime)
-        image = Image.open(most_recent)
-        w, h = image.size
+            if self.labelInfo.cget("text") == "Select the area to analyze":
+                self.labelInfo.pack_forget()
 
-        if w < 400:
-            window_width = 400
-        else:
-            window_width = w
-        window_height = h + 300
+            files = glob.glob(os.path.join(self.route, '*.png'))
+            most_recent = max(files, key=os.path.getmtime)
+            image = Image.open(most_recent)
+            w, h = image.size
 
-        self.root.geometry(str(window_width) + "x" + str(window_height))
-        self.root.minsize(window_width, window_height)
-        self.root.resizable(True, True)
+            window_width = 400 if w < 400 else w
+            window_height = h + 300
 
-        capture = ImageTk.PhotoImage(image)
-        self.labelImg.config(image=capture)
-        self.labelImg.image = capture
-        self.labelImg.pack(padx=5)
+            self.root.geometry(str(window_width) + "x" + str(window_height))
+            self.root.minsize(window_width, window_height)
+            self.root.resizable(True, True)
 
-        lugar = "Location " + str(data["Section"])
-        self.textLocation.config(state='normal')
-        self.textLocation.delete(0, tk.END)
-        self.textLocation.insert(0, lugar)
-        self.textLocation.config(state='readonly')
-        self.textLocation.pack(pady=5, padx=10, fill=tk.X)
+            capture = ImageTk.PhotoImage(image)
+            self.labelImg.config(image=capture)
+            self.labelImg.image = capture
+            self.labelImg.pack(padx=5)
 
-        if self.labelInfo.cget("text") == "Select the area to analyze":
-            self.labelInfo.pack(anchor='w')
+            lugar = "Location " + str(data["Section"])
+            self.textLocation.config(state='normal')
+            self.textLocation.delete(0, tk.END)
+            self.textLocation.insert(0, lugar)
+            self.textLocation.config(state='readonly')
+            self.textLocation.pack(pady=5, padx=10, fill=tk.X)
 
-        self.author.pack(side=tk.BOTTOM, anchor='e')
+            if self.labelInfo.cget("text") == "Select the area to analyze":
+                self.labelInfo.pack(anchor='w')
 
-        # create a container for Text and Scrollbar
-        self.frame_text.pack(fill=tk.BOTH, expand=True)  # it expands to top
-        # move text and scrollbar to container
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.text_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.text_box.config(state=tk.NORMAL)
-        self.text_box.delete("1.0", tk.END)
+            # create a label with creator info
+            self.author.pack(side=tk.BOTTOM, anchor='e')
 
-        if data:
+            # create a container for Text and Scrollbar
+            self.frame_text.pack(fill=tk.BOTH, expand=True)  # it expands to top
+            # move text and scrollbar to container
+            self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            self.text_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            self.text_box.config(state=tk.NORMAL)
+            self.text_box.delete("1.0", tk.END)
+
             message = data["Text"]
             if data["QR"] is None:
                 self.labelInfo.config(text="Text found")
@@ -296,9 +299,22 @@ class MainGUI:
             else:
                 self.text_box.insert(tk.END, message)
             self.text_box.config(state=tk.DISABLED)     # this avoid to edit text
+        else:
+            self.root.geometry(self.initial_window)
+            self.root.minsize(400, 125)  # fixed size of window
+            self.root.resizable(False, False)  # window is not resizable
+            self.labelInfo.config(text="Capture not taken, try again")
+            self.labelInfo.pack(anchor='center')
+            self.labelImg.pack_forget()  # previous image is hidden
+            self.textLocation.pack_forget()  # previous location is hidden
+            self.author.pack_forget()   # creator label hidden
+            self.frame_text.pack_forget()  # decoded text hidden
+            self.scrollbar.pack_forget()   # scrollbar hidden
+            self.text_box.pack_forget()  # textbox hidden
 
+    # initialize the first GUI
     def run(self):
-        self.update_coords()
+        self.update_coordinates()
         self.root.mainloop()
 
 
