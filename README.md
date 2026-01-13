@@ -1,2 +1,2 @@
 Instructional video available on youtube
-[![Instructional video]()](https://youtube.com/shorts/mcXIHsuotMs)
+[![Instructional video](thumbnail.jpg)](https://youtube.com/shorts/mcXIHsuotMs)
