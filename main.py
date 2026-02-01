@@ -39,6 +39,7 @@ class RectOverlay:
         self.virtual_left = user32.GetSystemMetrics(76)
         self.virtual_top = user32.GetSystemMetrics(77)
 
+        # this creates an transparent window over the screen
         self.overlay = tk.Toplevel(master)
         self.overlay.geometry(f"{self.virtual_width}x{self.virtual_height}+{self.virtual_left}+{self.virtual_top}")
         self.overlay.attributes('-alpha', 0.3)
@@ -46,9 +47,11 @@ class RectOverlay:
         self.overlay.configure(bg='black')
         self.overlay.overrideredirect(True)
 
+        # changes the cursor aspect
         self.canvas = tk.Canvas(self.overlay, cursor="cross", bg='black', highlightthickness=0)
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
+        # defines the initial values for the required attributes
         self.start_x, self.start_y = None, None
         self.rect = None
         self.text_found = None
@@ -56,6 +59,7 @@ class RectOverlay:
         self.section = None
         self.current_name = None
 
+        # defines the events based on keys pressed
         self.canvas.bind("<ButtonPress-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
