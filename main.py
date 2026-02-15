@@ -1,16 +1,22 @@
+'''
+To create the corresponding exe file it is required to execute the next command
+pyinstaller --onefile -w -n Chopping_v1.2 --add-data "folder.ico;." --add-data "button.png;." --add-data "icono.ico;." --icon=icono.ico main.py
+'''
+
+import ctypes
+import datetime
+import glob
+import os
+import subprocess
+import sys
 import time
 import tkinter as tk
-import ctypes
+import webbrowser
 import cv2
+import pyautogui
 import pyperclip
 import pytesseract
-import pyautogui
-import os
-import glob
-import datetime
-import webbrowser
 from PIL import Image, ImageTk, ImageGrab
-import sys
 
 # it is required to download tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
@@ -52,6 +58,10 @@ class RectOverlay:
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         # defines the initial values for the required attributes
+        if getattr(sys, 'frozen', False):   # For executable it gets the current route
+            self.main_route = os.path.dirname(sys.executable)
+        else:
+            self.main_route = os.path.dirname(__file__)   # for development this is the route
         self.start_x, self.start_y = None, None
         self.rect = None
         self.text_found = None
@@ -103,7 +113,7 @@ class RectOverlay:
     def qr_analyze(self):
         qr_detector = cv2.QRCodeDetector()
         try:
-            img = cv2.imread(os.path.join(os.path.dirname(__file__), self.current_name))
+            img = cv2.imread(os.path.join(self.main_route, self.current_name))
             q_data, bbox, _ = qr_detector.detectAndDecode(img)
             if q_data:
                 print(f"QR detected: {q_data}")
@@ -119,7 +129,7 @@ class RectOverlay:
             return False
 
     def text_analyze(self):     # analyze the text found in the image
-        img_punt = Image.open(os.path.join(os.path.dirname(__file__), self.current_name))
+        img_punt = Image.open(os.path.join(self.main_route, self.current_name))
         text = pytesseract.image_to_string(img_punt, config='--psm 11 --oem 3')
         text = text.replace('\n', ' ').replace('  ', ' ')
         pyperclip.copy(text)
@@ -136,7 +146,7 @@ class RectOverlay:
             screenshot = ImageGrab.grab(self.section, all_screens=True)
 
             self.current_name = "captures/capture" + stamp + ".png"
-            screenshot.save(os.path.join(os.path.dirname(__file__), self.current_name))
+            screenshot.save(os.path.join(self.main_route, self.current_name))
 
             if self.qr_analyze():
                 self.text_found = self.qr_found
@@ -153,7 +163,12 @@ class MainGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Chopping v1.2")
-        self.route = os.path.dirname(__file__) + '/captures/'
+        if getattr(sys, 'frozen', False):   # For executable it gets the current route
+            self.route = os.path.join(os.path.dirname(sys.executable), 'captures')
+        else:
+            self.route = os.path.dirname(__file__) + '\\captures\\'   # for development this is the route
+        if not os.path.exists(self.route):
+            os.makedirs(self.route, exist_ok=True)
         self.root.iconbitmap(os.path.join(os.path.dirname(__file__), 'icono.ico'))
 
         user_ = ctypes.windll.user32
@@ -229,7 +244,7 @@ class MainGUI:
 
     # opens the folder where the captures are saved
     def open_location(self):
-        os.startfile(self.route)
+        subprocess.run(['start', self.route], shell=True, check=True)
 
     # this is called once the first area selection is done
     def show_main(self, data):
