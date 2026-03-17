@@ -17,6 +17,7 @@ import pyautogui
 import pyperclip
 import pytesseract
 from PIL import Image, ImageTk, ImageGrab
+from pyzbar.pyzbar import decode
 
 # it is required to download tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
@@ -114,8 +115,11 @@ class RectOverlay:
         qr_detector = cv2.QRCodeDetector()
         try:
             img = cv2.imread(str(os.path.join(self.main_route, self.current_name)))
-            q_data, bbox, _ = qr_detector.detectAndDecode(img)
-            if q_data:
+            #q_data, bbox, _ = qr_detector.detectAndDecode(img)
+            decoded_data = decode(img)
+            if decoded_data:
+                primer_codigo = decoded_data[0]
+                q_data = primer_codigo.data.decode('utf-8')
                 print(f"QR detected: {q_data}")
                 self.qr_found = str(q_data)
                 return True
