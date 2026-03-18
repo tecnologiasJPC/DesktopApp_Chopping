@@ -1,6 +1,6 @@
 '''
 To create the corresponding exe file it is required to execute the next command
-pyinstaller --onefile -w -n Chopping_v1.2 --add-data "folder.ico;." --add-data "button.png;." --add-data "icono.ico;." --icon=icono.ico main.py
+pyinstaller --onefile -w -n Chopping_v1.3 --add-data "folder.ico;." --add-data "button.png;." --add-data "icono.ico;." --icon=icono.ico main.py
 '''
 
 import ctypes
@@ -166,7 +166,7 @@ class RectOverlay:
 class MainGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Chopping v1.2")
+        self.root.title("Chopping v1.3")
         if getattr(sys, 'frozen', False):   # for executable, it gets the current route
             self.route = os.path.join(os.path.dirname(sys.executable), 'captures')
         else:
