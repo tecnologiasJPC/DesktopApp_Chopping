@@ -15,9 +15,9 @@ import webbrowser
 import cv2
 import pyautogui
 import pyperclip
-import pytesseract
-from PIL import Image, ImageTk, ImageGrab
-from pyzbar.pyzbar import decode
+import pytesseract  # required to analyze the text found in the image and copy it to clipboard
+from PIL import Image, ImageTk, ImageGrab   # required to capture the screen and show the image in the GUI
+from pyzbar.pyzbar import decode    # required to decode QR codes
 
 # it is required to download tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
