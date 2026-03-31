@@ -3,18 +3,18 @@ To create the corresponding exe file it is required to execute the next command
 pyinstaller --onefile -w -n Chopping_v1.3 --add-data "folder.ico;." --add-data "button.png;." --add-data "icono.ico;." --icon=icono.ico main.py
 '''
 
-import ctypes
-import datetime
-import glob
-import os
-import subprocess
-import sys
-import time
-import tkinter as tk
-import webbrowser
-import cv2
-import pyautogui
-import pyperclip
+import ctypes   # required to adapt dimensions of screen and to get the current position of cursor on screen
+import datetime # required to create the name of the image with the date and time when it was taken
+import glob # required to get the most recent image taken in the folder where captures are saved
+import os   # required to create the folder where the captures are saved
+import subprocess # required to open the folder where the captures are saved
+import sys      # required to get the current route of the file, and to create the executable file with pyinstaller
+import time     # required to add some delay in the events to avoid errors when the image is being saved and analyzed
+import tkinter as tk    # required to create the GUI
+import webbrowser   # required to open links found in the text analyzed
+import cv2          # required to analyze the QR code found in the image
+import pyautogui    # required to get the current position of cursor
+import pyperclip    # required to copy the text found in the image to clipboard
 import pytesseract  # required to analyze the text found in the image and copy it to clipboard
 from PIL import Image, ImageTk, ImageGrab   # required to capture the screen and show the image in the GUI
 from pyzbar.pyzbar import decode    # required to decode QR codes
