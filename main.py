@@ -142,7 +142,7 @@ class RectOverlay:
 
     def close(self, data=None):
         self.overlay.destroy()
-        time.sleep(0.1)
+        #time.sleep(0.1)
         if self.process:
             now = datetime.datetime.now()
             stamp = now.strftime("%Y-%m-%d %H_%M_%S")
