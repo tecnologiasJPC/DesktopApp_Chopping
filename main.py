@@ -80,7 +80,6 @@ class RectOverlay:
         self.start_x = self.canvas.canvasx(event.x)
         self.start_y = self.canvas.canvasy(event.y)
         self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, outline='red', width=2)
-        time.sleep(0.05)
 
     def on_drag(self, event):
         cur_x = self.canvas.canvasx(event.x)
