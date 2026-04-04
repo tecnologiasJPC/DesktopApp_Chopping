@@ -132,8 +132,8 @@ class RectOverlay:
             return False
 
     def text_analyze(self):     # analyze the text found in the image
-        img_punt = Image.open(os.path.join(self.main_route, self.current_name))
-        text = pytesseract.image_to_string(img_punt, config='--psm 11 --oem 3')
+        with Image.open(os.path.join(self.main_route, self.current_name)) as img_punt:
+            text = pytesseract.image_to_string(img_punt, config='--psm 11 --oem 3')
         text = text.replace('\n', ' ').replace('  ', ' ')
         pyperclip.copy(text)
         text = text[:-1]
