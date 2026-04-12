@@ -9,7 +9,6 @@ import glob # required to get the most recent image taken in the folder where ca
 import os   # required to create the folder where the captures are saved
 import subprocess # required to open the folder where the captures are saved
 import sys      # required to get the current route of the file, and to create the executable file with pyinstaller
-import time     # required to add some delay in the events to avoid errors when the image is being saved and analyzed
 import tkinter as tk    # required to create the GUI
 import webbrowser   # required to open links found in the text analyzed
 import cv2          # required to analyze the QR code found in the image
