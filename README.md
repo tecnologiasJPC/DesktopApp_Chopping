@@ -10,3 +10,5 @@ In case only text is detected, it is going to be displayed in a textbox.
 
 # Instructional video available on youtube
 [![Instructional video](thumbnail.jpg)](https://youtube.com/shorts/mcXIHsuotMs)
+
+Software for free use.
